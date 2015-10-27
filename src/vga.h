@@ -23,6 +23,8 @@ enum vga_color {
 };
 
 #define VGA_SCREEN_BUFFER 0xb8000
+#define VGA_PORT_SELECT 0x3d4
+#define VGA_PORT_DATA 0x3d5
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 

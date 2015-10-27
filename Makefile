@@ -7,9 +7,9 @@ STARTC := startc
 KERNEL := funos.bin
 SOURCES_S :=            \
   boot.s                \
-	idt.s                 \
-	pic.s                 \
-	$(END)
+  idt.s                 \
+  pic.s                 \
+  $(END)
 SOURCES_C :=            \
   buffer.c              \
   cpuid.c               \

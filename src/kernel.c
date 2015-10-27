@@ -11,11 +11,14 @@ void print_hex8(uint8_t n) {
   vga_put(__hex_digit(n & 0xf));
 }
 
-void print_hex32(uint32_t n) {
-  print_hex8(n >> 24);
-  print_hex8(n >> 16);
+void print_hex16(uint16_t n) {
   print_hex8(n >> 8);
   print_hex8(n);
+}
+
+void print_hex32(uint32_t n) {
+  print_hex16(n >> 16);
+  print_hex16(n);
 }
 
 export void _isr_irq(uint32_t irq, unused uint32_t regs) {
@@ -58,14 +61,13 @@ export void kernel_main() {
   cpuid_get(&info);
   cpuid_explain(&info, &buffer);
   vga_putb(&buffer);
-
   vga_puts("\n");
-  print_hex32(info.highest_extended_feature);
-  vga_put('-');
-  print_hex32(info.feature_edx);
-  vga_put('-');
-  print_hex32(info.feature_ecx);
 
+  uint8_t x = *(uint8_t *) 0x62;
+  uint8_t y = *(uint16_t *) 0x63;
+  print_hex8(x);
+  vga_put('-');
+  print_hex16(y);
   // serial_setup(serial_port1());
 
   // uint8_t x;

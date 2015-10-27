@@ -10,12 +10,21 @@ static uint16_t *screen_buffer = (uint16_t *) VGA_SCREEN_BUFFER;
 static uint8_t cursor_y = 0, cursor_x = 0;
 static uint8_t attr = VGA_ATTR(COLOR_YELLOW, COLOR_GREEN);
 
+static void set_cursor() {
+  uint16_t offset = cursor_y * VGA_WIDTH + cursor_x;
+  asm_outb(VGA_PORT_SELECT, 0x0f);
+  asm_outb(VGA_PORT_DATA, offset & 0xff);
+  asm_outb(VGA_PORT_SELECT, 0x0e);
+  asm_outb(VGA_PORT_DATA, offset >> 8);
+}
+
 void vga_clear() {
   uint16_t cell = VGA_CELL(attr, ' ');
   for (uint16_t i = 0; i < VGA_HEIGHT * VGA_WIDTH; i++) {
     screen_buffer[i] = cell;
   }
   cursor_y = cursor_x = 0;
+  set_cursor();
 }
 
 void vga_color(uint8_t fg, uint8_t bg) {
@@ -33,6 +42,7 @@ void vga_put(char ch) {
       cursor_y = 0;
     }
   }
+  set_cursor();
 }
 
 static void vga_put_string(const char *s, uint32_t length) {
@@ -46,6 +56,7 @@ static void vga_put_string(const char *s, uint32_t length) {
           // FIXME scroll
           cursor_y = 0;
         }
+        set_cursor();
         break;
       default:
         vga_put(ch);
