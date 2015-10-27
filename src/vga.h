@@ -1,5 +1,7 @@
 #pragma once
 
+#include "buffer.h"
+
 /* Hardware text mode color constants. */
 enum vga_color {
 	COLOR_BLACK = 0,
@@ -30,4 +32,5 @@ enum vga_color {
 void vga_clear();
 void vga_color(uint8_t fg, uint8_t bg);
 void vga_put(char ch);
-void vga_puts(char *s);
+void vga_puts(const char *s);
+void vga_putb(const buffer_t *b);

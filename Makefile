@@ -11,10 +11,12 @@ SOURCES_S :=            \
 	pic.s                 \
 	$(END)
 SOURCES_C :=            \
+  buffer.c              \
+  cpuid.c               \
   terminal.c            \
-	kernel.c              \
-	vga.c                 \
-	$(END)
+  kernel.c              \
+  vga.c                 \
+  $(END)
 
 OBJECTS := $(addprefix $(TARGET)/, $(SOURCES_C:.c=.o)) $(addprefix $(TARGET)/, $(SOURCES_S:.s=.o))
 

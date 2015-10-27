@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "cpuid.h"
 #include "kernel.h"
 #include "vga.h"
 
@@ -42,65 +43,28 @@ void enable_irq(uint8_t irq) {
   asm_outb(port, x);
 }
 
-static inline void cpuid(int code, uint32_t regs[4]) {
-  asm volatile("cpuid" : "=a" (regs[0]), "=b" (regs[1]), "=c" (regs[2]), "=d" (regs[3]) : "a" (code));
-}
-
-// -----
-
-typedef struct {
-  char id[13];
-  uint32_t highest_feature;
-  uint32_t highest_extended_feature;
-  uint32_t feature_edx;
-  uint32_t feature_ecx;
-} cpu_info;
-
-void get_cpu_info(cpu_info *info) {
-  uint32_t regs[4];
-
-  cpuid(0, regs);
-#define _copy(n, x) do { \
-  info->id[n] = regs[x] & 0xff; \
-  info->id[n + 1] = regs[x] >> 8; \
-  info->id[n + 2] = regs[x] >> 16; \
-  info->id[n + 3] = regs[x] >> 24; \
-} while (0)
-  _copy(0, 1);
-  _copy(4, 3);
-  _copy(8, 2);
-  info->id[12] = 0;
-  info->highest_feature = regs[0];
-
-  cpuid(0x8000000, regs);
-  info->highest_extended_feature = regs[0];
-  print_hex32(info->highest_extended_feature);
-  vga_put('-');
-
-  cpuid(1, regs);
-  info->feature_edx = regs[3];
-  info->feature_ecx = regs[2];
-  print_hex32(regs[3]);
-  vga_put('/');
-  print_hex32(regs[2]);
-}
-
-// -----
-
-
 #include "terminal.h"
 export void kernel_main() {
 	vga_clear();
 	vga_puts("Hello and welcome to FunOS!\n");
 
-  asm volatile("int $0x21");
-  asm volatile("int $0x24");
-
   vga_puts("\n");
 
   cpu_info info;
-  get_cpu_info(&info);
-  vga_puts(info.id);
+  char buffer_data[256];
+  buffer_t buffer;
+
+  buffer_init(&buffer, buffer_data, sizeof(buffer_data));
+  cpuid_get(&info);
+  cpuid_explain(&info, &buffer);
+  vga_putb(&buffer);
+
+  vga_puts("\n");
+  print_hex32(info.highest_extended_feature);
+  vga_put('-');
+  print_hex32(info.feature_edx);
+  vga_put('-');
+  print_hex32(info.feature_ecx);
 
   // serial_setup(serial_port1());
 

@@ -35,9 +35,10 @@ void vga_put(char ch) {
   }
 }
 
-void vga_puts(char *s) {
-  while (*s) {
-    switch (*s) {
+static void vga_put_string(const char *s, uint32_t length) {
+  for (uint32_t i = 0; i < length; i++) {
+    char ch = s[i];
+    switch (ch) {
       case '\n':
         cursor_x = 0;
         cursor_y++;
@@ -47,9 +48,18 @@ void vga_puts(char *s) {
         }
         break;
       default:
-        vga_put(*s);
+        vga_put(ch);
         break;
     }
-    s++;
   }
+}
+
+void vga_puts(const char *s) {
+  uint32_t length = 0;
+  while (s[length]) length++;
+  vga_put_string(s, length);
+}
+
+void vga_putb(const buffer_t *b) {
+  vga_put_string(b->buffer, b->used);
 }
