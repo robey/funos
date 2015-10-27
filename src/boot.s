@@ -23,7 +23,6 @@
 .section .bootstrap_stack, "aw", @nobits
 stack_bottom:
 .skip 16384 # 16 KiB
-.skip 16384
 stack_top:
 
 # The linker script specifies _start as the entry point to the kernel and the
@@ -35,13 +34,8 @@ stack_top:
 _start:
   # point to our 16K stack for starters.
 	movl $stack_top, %esp
-	sti
 
-	# turn off VGA blinking cursor.
-	# FIXME this doesn't work. i don't know why. calling int 10h at all causes an instant crash.
-	mov $0x0100, %ax
-	mov $0x0007, %cx
-	#int $0x10
+	# (robey) we may not call BIOS because multiboot puts us into protected mode already!
 
 /*
   # enter protected mode.
@@ -68,8 +62,8 @@ _start:
 	/*call _gdt_init*/
 
 
-	call _idt_init
-	call _pic_init
+	#call _idt_init
+	#call _pic_init
 
 	# We are now ready to actually execute C code. We cannot embed that in an
 	# assembly file, so we'll create a kernel.c file in a moment. In that file,
