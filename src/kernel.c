@@ -18,6 +18,7 @@ void print_hex16(uint16_t n) {
 
 void print_hex32(uint32_t n) {
   print_hex16(n >> 16);
+  vga_put(',');
   print_hex16(n);
 }
 
@@ -26,28 +27,34 @@ export void _isr_irq(uint32_t irq, unused uint32_t regs) {
   print_hex8(irq);
 }
 
-// oh no.
-#define PIC1		0x20		/* IO base address for master PIC */
-#define PIC2		0xA0		/* IO base address for slave PIC */
-#define PIC1_COMMAND	PIC1
-#define PIC1_DATA	(PIC1+1)
-#define PIC2_COMMAND	PIC2
-#define PIC2_DATA	(PIC2+1)
-void enable_irq(uint8_t irq) {
-  uint16_t port = PIC1_DATA;
+// init (if necessary) the PIC and then disable it.
+// the PIC is superceded by APIC in modern processors.
+#define PIC1_CMD  0x0020
+#define PIC1_DATA 0x0021
+#define PIC2_CMD  0x00a0
+#define PIC2_DATA 0x00a1
 
-  if (irq >= 8) {
-    port = PIC2_DATA;
-    irq -= 8;
-  }
-  uint8_t x;
-  asm_inb(port, x);
-  x &= ~(1 << irq);
-  asm_outb(port, x);
+void pic_init() {
+  asm_outb(PIC1_CMD, 0x11);
+  asm_outb(PIC2_CMD, 0x11);
+  // put irq ints at 0x20 - 0x2f.
+  asm_outb(PIC1_DATA, 0x20);
+  asm_outb(PIC2_DATA, 0x28);
+  // PIC1 is primary. PIC2 is secondary.
+  asm_outb(PIC1_DATA, 0x04);
+  asm_outb(PIC2_DATA, 0x02);
+  // normal view.
+  asm_outb(PIC1_DATA, 0x01);
+  asm_outb(PIC2_DATA, 0x01);
+  // disable all.
+  asm_outb(PIC1_DATA, 0xff);
+  asm_outb(PIC2_DATA, 0xff);
 }
+
 
 #include "terminal.h"
 export void kernel_main() {
+  pic_init();
 	vga_clear();
 	vga_puts("Hello and welcome to FunOS!\n");
 
@@ -63,12 +70,22 @@ export void kernel_main() {
   vga_putb(&buffer);
   vga_puts("\n");
 
-  uint8_t x = *(uint8_t *) 0x62;
-  uint8_t y = *(uint16_t *) 0x63;
-  print_hex8(x);
-  vga_put('-');
-  print_hex16(y);
-  // serial_setup(serial_port1());
+  uint32_t hi, lo;
+#define APIC_BASE_MSR 0x1b
+  asm_get_msr(APIC_BASE_MSR, hi, lo);
+  print_hex32(hi);
+  vga_put('/');
+  print_hex32(lo);
+
+  vga_puts("\n");
+  asm volatile("movl %%esp, %0" : "=a" (lo) : );
+  print_hex32(lo);
+  vga_put(' ');
+  asm volatile("movl %%ss, %0" : "=a" (lo) : );
+  print_hex32(lo);
+//  print_hex32(*(uint32_t *) 0x00001000);
+
+// serial_setup(serial_port1());
 
   // uint8_t x;
   // asm_outb(0x3fa, 0x07);

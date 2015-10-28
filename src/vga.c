@@ -12,9 +12,9 @@ static uint8_t attr = VGA_ATTR(COLOR_YELLOW, COLOR_GREEN);
 
 static void set_cursor() {
   uint16_t offset = cursor_y * VGA_WIDTH + cursor_x;
-  asm_outb(VGA_PORT_SELECT, 0x0f);
+  asm_outb(VGA_PORT_SELECT, VGA_REGISTER_CURSOR_LOW);
   asm_outb(VGA_PORT_DATA, offset & 0xff);
-  asm_outb(VGA_PORT_SELECT, 0x0e);
+  asm_outb(VGA_PORT_SELECT, VGA_REGISTER_CURSOR_HIGH);
   asm_outb(VGA_PORT_DATA, offset >> 8);
 }
 
@@ -25,6 +25,11 @@ void vga_clear() {
   }
   cursor_y = cursor_x = 0;
   set_cursor();
+
+  asm_outb(VGA_PORT_SELECT, VGA_REGISTER_CURSOR_START);
+  asm_outb(VGA_PORT_DATA, 0);
+  asm_outb(VGA_PORT_SELECT, VGA_REGISTER_CURSOR_END);
+  asm_outb(VGA_PORT_DATA, 15);
 }
 
 void vga_color(uint8_t fg, uint8_t bg) {

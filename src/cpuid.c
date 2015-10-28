@@ -48,6 +48,7 @@ bool cpuid_explain(cpu_info *info, buffer_t *buffer) {
   if (info->feature_edx & CPUID_FEAT_EDX_FPU) add4(" fpu");
   if (info->feature_edx & CPUID_FEAT_EDX_PSE) add4(" pse");
   if (info->feature_edx & CPUID_FEAT_EDX_TSC) add4(" tsc");
+  if (info->feature_edx & CPUID_FEAT_EDX_MSR) add4(" msr");
   if (info->feature_edx & CPUID_FEAT_EDX_PAE) add4(" pae");
   if (info->feature_edx & CPUID_FEAT_EDX_CX8) add4(" cx8");
   if (info->feature_edx & CPUID_FEAT_EDX_APIC) add5(" apic");
