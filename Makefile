@@ -7,6 +7,7 @@ STARTC := startc
 KERNEL := funos.bin
 SOURCES_S :=            \
   boot.s                \
+  idt.s                 \
   $(END)
 SOURCES_C :=            \
   buffer.c              \
