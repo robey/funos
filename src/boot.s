@@ -1,20 +1,20 @@
-# Declare constants used for creating a multiboot header.
-.set ALIGN,    1<<0             # align loaded modules on page boundaries
-.set MEMINFO,  1<<1             # provide memory map
-.set FLAGS,    ALIGN | MEMINFO  # this is the Multiboot 'flag' field
-.set MAGIC,    0x1BADB002       # 'magic number' lets bootloader find the header
-.set CHECKSUM, -(MAGIC + FLAGS) # checksum of above, to prove we are multiboot
 
-# Declare a header as in the Multiboot Standard. We put this into a special
-# section so we can force the header to be in the start of the final program.
-# You don't need to understand all these details as it is just magic values that
-# is documented in the multiboot standard. The bootloader will search for this
-# magic sequence and recognize us as a multiboot kernel.
+# multiboot header.
+.set BOOT_MAGIC,        0x1badb002
+.set BOOT_INFO_MAGIC,   0x2badb002
+
+# multiboot flags.
+.set BF_ALIGN,          1 << 0  # align loaded modules on page boundaries
+.set BF_MEMINFO,        1 << 1  # provide memory map
+
+.set BOOT_FLAGS,        BF_ALIGN | BF_MEMINFO
+.set BOOT_CHECKSUM,     -(BOOT_MAGIC + BOOT_FLAGS)
+
 .section .multiboot
 .align 4
-.long MAGIC
-.long FLAGS
-.long CHECKSUM
+.long BOOT_MAGIC, BOOT_FLAGS, BOOT_CHECKSUM
+
+
 
 # Currently the stack pointer register (esp) points at anything and using it may
 # cause massive harm. Instead, we'll provide our own stack. We will allocate
@@ -29,6 +29,11 @@ stack_top:
 .global _start
 .type _start, @function
 _start:
+  # insist on multiboot (for now?).
+  cmp $BOOT_INFO_MAGIC, %eax
+  jne .Lstop
+  mov %ebx, boot_info_struct
+
   # enter protected mode, if we aren't already.
   # we may not call BIOS because multiboot might have put us into protected mode already!
 
@@ -66,19 +71,13 @@ no_a20:
   # point to our 16K stack for starters.
   movl $stack_top, %esp
 
-
   #call _idt_init
   #call _pic_init
 
   # jump to C code.
   call kernel_main
 
-  # In case the function returns, we'll want to put the computer into an
-  # infinite loop. To do that, we use the clear interrupt ('cli') instruction
-  # to disable interrupts, the halt instruction ('hlt') to stop the CPU until
-  # the next interrupt arrives, and jumping to the halt instruction if it ever
-  # continues execution, just to be safe. We will create a local label rather
-  # than real symbol and jump to there endlessly.
+.Lstop:
   cli
   hlt
 .Lhang:
@@ -111,15 +110,37 @@ _set_gdt:
   mov %eax, %ss
   ret
 
+# expects IDT address in %eax, size in %edx
+.global _set_idt
+.type _set_idt, @function
+_set_idt:
+  mov $idt_register, %ebx
+  mov %dx, (%ebx)
+  movl %eax, 2(%ebx)
+  lidtl idt_register
+  ret
+
+.global _get_boot_info
+.type _get_boot_info, @function
+_get_boot_info:
+  mov (boot_info_struct), %eax
+  ret
 
 .section .data
 
-gdt_register:
-  .hword 0 # size
-  .word 0  # base
-
-.section .data
 .align 8
+gdt_register:
+  .short 0 # size - 1
+  .long 0  # base
+
+.align 8
+idt_register:
+  .short 0  # size - 1
+  .long 0   # base
+
+.align 8
+boot_info_struct:
+  .long 0
 
 # initial GDT (global descriptor table for memory)
 #
@@ -134,6 +155,7 @@ gdt_register:
 #       c: limit is bits 13 - 31, bottom 12 bits are 0xfff
 # l - limit (bits 16 - 19)
 # b - base (bits 24 - 31)
+.align 8
 initial_gdt:
 gdt_entry_null:
   .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
