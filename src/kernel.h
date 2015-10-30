@@ -6,7 +6,10 @@
 
 // get/set MSR
 #define asm_get_msr(msr, hi, lo) asm volatile("rdmsr" : "=a" (lo), "=d" (hi) : "c" (msr))
-#define asm_set_msr(msr, hi, lo) asm volatile("wrmsr" : "a" (lo), "d" (hi) : "c" (msr))
+#define asm_set_msr(msr, hi, lo) asm volatile("wrmsr" : /* no outputs */ : "a" (lo), "d" (hi), "c" (msr))
+
+// set the IDT
+extern void _idt_init();
 
 // use -fvisibility=hidden so most functions are un-exported.
 #define export __attribute__((visibility ("default")))

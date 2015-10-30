@@ -18,12 +18,17 @@ void print_hex16(uint16_t n) {
 
 void print_hex32(uint32_t n) {
   print_hex16(n >> 16);
-  vga_put(',');
   print_hex16(n);
 }
 
+void print_hex64(uint64_t n) {
+  print_hex32(n >> 32);
+  vga_put('_');
+  print_hex32(n);
+}
+
 export void _isr_irq(uint32_t irq, unused uint32_t regs) {
-  vga_put('$');
+  vga_put('%');
   print_hex8(irq);
 }
 
@@ -33,6 +38,7 @@ export void _isr_irq(uint32_t irq, unused uint32_t regs) {
 #define PIC1_DATA 0x0021
 #define PIC2_CMD  0x00a0
 #define PIC2_DATA 0x00a1
+#define APIC_BASE_MSR 0x1b
 
 void pic_init() {
   asm_outb(PIC1_CMD, 0x11);
@@ -49,12 +55,67 @@ void pic_init() {
   // disable all.
   asm_outb(PIC1_DATA, 0xff);
   asm_outb(PIC2_DATA, 0xff);
+
+  // disable APIC.
+  uint32_t hi, lo;
+  asm_get_msr(APIC_BASE_MSR, hi, lo);
+  lo &= ~(1 << 11);
+  asm_set_msr(APIC_BASE_MSR, hi, lo);
 }
 
+// ----- IDT
+
+/*
+// 0x00 - 0x13: cpu exceptions
+// 0x14 - 0x1f: unused
+// 0x20 - 0x2f: IRQs 0 - 15
+static uint64_t idt_buffer[0x30];
+
+#define IDT_TYPE_INT_GATE 0x8e
+
+static void idt_set_handler(int n, void *addr, uint16_t selector, uint8_t type) {
+  uint16_t low = ((uint32_t) addr) & 0xffff;
+  uint16_t high = ((uint32_t) addr) >> 16;
+  uint8_t *desc = (uint8_t *) &idt_buffer[n];
+*/
+
+  /*
+   * offset low (16)
+   * selector (16)
+   * unused (8)
+   * type (8)
+   * offset high (16)
+   */
+   /*
+  *(uint16_t *)(desc + 0) = low;
+  *(uint16_t *)(desc + 2) = selector;
+  *(desc + 5) = type;
+  *(uint16_t *)(desc + 6) = high;
+}
+
+static void idt_default_handler() {
+
+}
+
+void init_idt() {
+  for (uint32_t i = 0; i < 0x30; i++) idt_buffer[i] = 0;
+
+}
+*/
+
+void _isr_cpu(uint32_t id, unused uint32_t *state) {
+  vga_put('$');
+  print_hex8(id);
+}
+
+// -----
 
 #include "terminal.h"
+#include "boot_info.h"
 export void kernel_main() {
   pic_init();
+  _idt_init();
+
 	vga_clear();
 	vga_puts("Hello and welcome to FunOS!\n");
 
@@ -83,6 +144,47 @@ export void kernel_main() {
   vga_put(' ');
   asm volatile("movl %%ss, %0" : "=a" (lo) : );
   print_hex32(lo);
+
+  vga_puts("\nbootinfo: ");
+  boot_info *bi = _get_boot_info();
+  print_hex32(bi->flags);
+  vga_puts("\n");
+  if (bi->flags & BFI_MEMORY_MAP) {
+    print_hex32(bi->mmap_length);
+    vga_puts("\n");
+
+    for (uint32_t i = 0; i < 10; i++) {
+      print_hex32(bi->mmap_addr[i].size);
+      vga_put(' ');
+      print_hex64(bi->mmap_addr[i].base_addr);
+      vga_put(' ');
+      print_hex64(bi->mmap_addr[i].length);
+      vga_put(' ');
+      print_hex32(bi->mmap_addr[i].type);
+
+      vga_puts("\n");
+    }
+  }
+
+  // Send the command byte.
+  // asm_outb(0x43, 0x36);
+  // asm_outb(0x40, 0xff);
+  // asm_outb(0x40, 0xff);
+
+//  asm volatile("int $0x00");
+//  asm volatile("int $0x23");
+  // irq 1 is ok!
+  asm_outb(PIC1_DATA, 0xfd);
+  asm_outb(PIC2_DATA, 0xff);
+  while (1) {
+    asm volatile("nop");
+  }
+
+  // print_hex32(boot_info[0]);
+  // print_hex32(boot_info[1]);
+  // vga_put(' ');
+  // print_hex32(boot_info[2]);
+
 //  print_hex32(*(uint32_t *) 0x00001000);
 
 // serial_setup(serial_port1());
