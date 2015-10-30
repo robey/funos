@@ -27,40 +27,22 @@ void print_hex64(uint64_t n) {
   print_hex32(n);
 }
 
-export void _isr_irq(uint32_t irq, unused uint32_t regs) {
-  vga_put('%');
-  print_hex8(irq);
+void _isr_cpu(uint32_t id, unused uint32_t *state) {
+  vga_put('$');
+  print_hex8(id);
 }
 
-// init (if necessary) the PIC and then disable it.
-// the PIC is superceded by APIC in modern processors.
-#define PIC1_CMD  0x0020
-#define PIC1_DATA 0x0021
-#define PIC2_CMD  0x00a0
-#define PIC2_DATA 0x00a1
-#define APIC_BASE_MSR 0x1b
+export void _isr_irq(uint32_t irq, unused uint32_t regs) {
+  if (irq == 1) {
+    uint8_t key;
+    asm_inb(0x60, key);
+    vga_put('@');
+    print_hex8(key);
+    return;
+  }
 
-void pic_init() {
-  asm_outb(PIC1_CMD, 0x11);
-  asm_outb(PIC2_CMD, 0x11);
-  // put irq ints at 0x20 - 0x2f.
-  asm_outb(PIC1_DATA, 0x20);
-  asm_outb(PIC2_DATA, 0x28);
-  // PIC1 is primary. PIC2 is secondary.
-  asm_outb(PIC1_DATA, 0x04);
-  asm_outb(PIC2_DATA, 0x02);
-  // normal view.
-  asm_outb(PIC1_DATA, 0x01);
-  asm_outb(PIC2_DATA, 0x01);
-  // disable all.
-  asm_outb(PIC1_DATA, 0xff);
-  asm_outb(PIC2_DATA, 0xff);
-
-  // disable APIC.
-  uint32_t hi, lo;
-  asm_get_msr(APIC_BASE_MSR, hi, lo);
-  lo &= ~(1 << 11);
-  asm_set_msr(APIC_BASE_MSR, hi, lo);
+  vga_put('%');
+  print_hex8(irq);
 }
 
 // ----- IDT
@@ -103,18 +85,18 @@ void init_idt() {
 }
 */
 
-void _isr_cpu(uint32_t id, unused uint32_t *state) {
-  vga_put('$');
-  print_hex8(id);
-}
 
 // -----
 
 #include "terminal.h"
 #include "boot_info.h"
+#include "irq.h"
+#include "pic.h"
 export void kernel_main() {
+  asm_cli();
   pic_init();
   _idt_init();
+  asm_sti();
 
 	vga_clear();
 	vga_puts("Hello and welcome to FunOS!\n");
@@ -171,11 +153,9 @@ export void kernel_main() {
   // asm_outb(0x40, 0xff);
   // asm_outb(0x40, 0xff);
 
-//  asm volatile("int $0x00");
-//  asm volatile("int $0x23");
-  // irq 1 is ok!
-  asm_outb(PIC1_DATA, 0xfd);
-  asm_outb(PIC2_DATA, 0xff);
+  serial_setup(serial_port1());
+  irq_enable(IRQ_KEYBOARD);
+  irq_enable(IRQ_SERIAL1);
   while (1) {
     asm volatile("nop");
   }
@@ -187,7 +167,6 @@ export void kernel_main() {
 
 //  print_hex32(*(uint32_t *) 0x00001000);
 
-// serial_setup(serial_port1());
 
   // uint8_t x;
   // asm_outb(0x3fa, 0x07);

@@ -12,8 +12,10 @@ SOURCES_S :=            \
 SOURCES_C :=            \
   buffer.c              \
   cpuid.c               \
-  terminal.c            \
+  irq.c                 \
   kernel.c              \
+  pic.c                 \
+  terminal.c            \
   vga.c                 \
   $(END)
 
