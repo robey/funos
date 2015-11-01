@@ -15,7 +15,7 @@ SOURCES_C :=            \
   irq.c                 \
   kernel.c              \
   pic.c                 \
-  terminal.c            \
+  serial.c              \
   vga.c                 \
   $(END)
 
@@ -24,7 +24,7 @@ OBJECTS := $(addprefix $(TARGET)/, $(SOURCES_C:.c=.o)) $(addprefix $(TARGET)/, $
 GCC := target/bin/i686-elf-gcc
 GAS := target/bin/i686-elf-as
 
-CFLAGS := -std=gnu99 -ffreestanding -O2 -Wall -Wextra -fvisibility=hidden -isystem $(STARTC)/include
+CFLAGS := -MMD -std=gnu99 -ffreestanding -g -O2 -Wall -Wextra -fvisibility=hidden -isystem $(STARTC)/include
 LDFLAGS := -ffreestanding -O2 -nostdlib -lgcc
 
 all: $(KERNEL)
@@ -46,6 +46,8 @@ $(TARGET)/%.o: $(TARGET)/%.s
 
 $(TARGET)/%.o: $(SOURCE)/%.s
 	$(GAS) $< -o $@
+
+-include $(TARGET)/*.d
 
 .PHONY: all clean
 
