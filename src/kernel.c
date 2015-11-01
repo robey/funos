@@ -32,19 +32,6 @@ void _isr_cpu(uint32_t id, unused uint32_t *state) {
   print_hex8(id);
 }
 
-export void _isr_irq(uint32_t irq, unused uint32_t regs) {
-  if (irq == 1) {
-    uint8_t key;
-    asm_inb(0x60, key);
-    vga_put('@');
-    print_hex8(key);
-    return;
-  }
-
-  vga_put('%');
-  print_hex8(irq);
-}
-
 // ----- IDT
 
 /*
@@ -86,9 +73,14 @@ void init_idt() {
 */
 
 
+static void keypress_serial(uint8_t data) {
+  vga_put('$');
+  print_hex8(data);
+}
+
 // -----
 
-#include "terminal.h"
+#include "serial.h"
 #include "boot_info.h"
 #include "irq.h"
 #include "pic.h"
@@ -153,9 +145,11 @@ export void kernel_main() {
   // asm_outb(0x40, 0xff);
   // asm_outb(0x40, 0xff);
 
-  serial_setup(serial_port1());
-  irq_enable(IRQ_KEYBOARD);
-  irq_enable(IRQ_SERIAL1);
+  serial_setup(serial1_port(), serial1_irq(), keypress_serial);
+  char s[] = "Hello from a buffer so large it couldn't possibly fit! I'm really serious about this. I want to see what happens when there's no more room.\n";
+  for (char *p = s; *p; p++) serial_write(*p);
+
+//  irq_enable(IRQ_KEYBOARD);
   while (1) {
     asm volatile("nop");
   }
