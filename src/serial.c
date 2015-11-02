@@ -36,6 +36,8 @@
 #define STATUS_REASON_TX  (1 << 1)
 #define STATUS_REASON_RX  (2 << 1)
 
+#define LINE_STATUS_TX_READY (1 << 5)
+
 static irq_handler_t previous_irq_handler = IRQ_HANDLER_NONE;
 static serial_handler_t serial_handler = SERIAL_HANDLER_NONE;
 static uint16_t serial_port = 0;
@@ -84,5 +86,9 @@ void serial_setup(uint16_t port, uint8_t irq, serial_handler_t handler) {
 }
 
 void serial_write(uint8_t data) {
+  uint8_t status;
+  do {
+    asm_inb(serial_port + PORT_LINE_STATUS, status);
+  } while ((status & LINE_STATUS_TX_READY) == 0);
   asm_outb(serial_port + PORT_TX, data);
 }
