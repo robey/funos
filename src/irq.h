@@ -18,4 +18,4 @@ typedef void (*irq_handler_t)(uint8_t irq);
 void irq_enable(uint32_t irq);
 void irq_disable(uint32_t irq);
 irq_handler_t irq_set_handler(uint8_t irq, irq_handler_t handler);
-void _isr_irq(uint32_t irq, unused uint32_t *regs);
+void isr_irq(uint32_t irq, unused uint32_t *regs);

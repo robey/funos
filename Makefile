@@ -1,7 +1,7 @@
-END :=
-
-SOURCE := src
-TARGET := build-kernel
+ROOT := .
+SRCDIR := src
+OBJDIR := build-kernel
+TARGET := funos.bin
 STARTC := startc
 
 KERNEL := funos.bin
@@ -18,38 +18,31 @@ SOURCES_C :=            \
   serial.c              \
   vga.c                 \
   $(END)
+LIBDIRS :=              \
+  boot                  \
+  $(END)
 
-OBJECTS := $(addprefix $(TARGET)/, $(SOURCES_C:.c=.o)) $(addprefix $(TARGET)/, $(SOURCES_S:.s=.o))
+# OBJECTS := $(addprefix $(TARGET)/, $(SOURCES_C:.c=.o)) $(addprefix $(TARGET)/, $(SOURCES_S:.s=.o))
 
-GCC := target/bin/i686-elf-gcc
-GAS := target/bin/i686-elf-as
+include build.mk
 
-CFLAGS := -MMD -std=gnu99 -ffreestanding -g -O2 -Wall -Wextra -fvisibility=hidden -isystem $(STARTC)/include
-LDFLAGS := -ffreestanding -O2 -nostdlib -lgcc
+foo: $(OBJDIR)/boot.a
 
-all: $(KERNEL)
+$(TARGET): $(SRCDIR)/linker.ld $(OBJECTS) $(LIBS)
+	$(GCC) -T $(SRCDIR)/linker.ld -o $(TARGET) $(OBJECTS) $(LIBS) $(LDFLAGS)
 
-clean:
-	rm -rf $(TARGET) $(KERNEL)
-
-$(KERNEL): $(SOURCE)/linker.ld $(TARGET) $(OBJECTS)
-	$(GCC) -T $(SOURCE)/linker.ld -o $(KERNEL) $(OBJECTS) $(LDFLAGS)
-
-$(TARGET):
-	mkdir -p $(TARGET)
-
-$(TARGET)/%.s: $(SOURCE)/%.c
-	$(GCC) -S $(CFLAGS) $< -o $@
-
-$(TARGET)/%.o: $(TARGET)/%.s
+$(OBJDIR)/%.o: $(SRCDIR)/%.s
 	$(GAS) $< -o $@
 
-$(TARGET)/%.o: $(SOURCE)/%.s
-	$(GAS) $< -o $@
 
--include $(TARGET)/*.d
 
-.PHONY: all clean
+run: all
+	qemu-system-x86_64 -s -smp cpus=2 -kernel ./funos.bin
+
+run-serial: all
+	qemu-system-i386 -s -kernel ./funos.bin -nographic
+
+.PHONY:  run-serial run
 
 
 #

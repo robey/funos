@@ -44,7 +44,7 @@ irq_handler_t irq_set_handler(uint8_t irq, irq_handler_t handler) {
 }
 
 // ISR handler from boot.s setup.
-void _isr_irq(uint32_t irq, unused uint32_t *regs) {
+void isr_irq(uint32_t irq, unused uint32_t *regs) {
   irq_handler_t handler = irq_handlers[irq];
   if (handler != IRQ_HANDLER_NONE) handler(irq);
 }

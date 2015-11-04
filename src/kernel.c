@@ -27,7 +27,7 @@ void print_hex64(uint64_t n) {
   print_hex32(n);
 }
 
-void _isr_cpu(uint32_t id, unused uint32_t *state) {
+void isr_cpu(uint32_t id, unused uint32_t *state) {
   vga_put('$');
   print_hex8(id);
 }
@@ -85,10 +85,10 @@ static void keypress_serial(uint8_t data) {
 #include "irq.h"
 #include "pic.h"
 export void kernel_main() {
-  asm_cli();
-  pic_init();
-  _idt_init();
-  asm_sti();
+  // asm_cli();
+  // pic_init();
+  // _idt_init();
+  // asm_sti();
 
 	vga_clear();
 	vga_puts("Hello and welcome to FunOS!\n");
