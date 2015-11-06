@@ -1,8 +1,15 @@
 END :=
 
-GCC := $(ROOT)/target/bin/i686-elf-gcc
-GAS := $(ROOT)/target/bin/i686-elf-as
-GAR := $(ROOT)/target/bin/i686-elf-ar
+#PLATFORM := i686-elf
+PLATFORM := x86_64-elf
+BINDIR := $(abspath $(ROOT)/tools/bin)
+
+TAR := tar
+GCC := $(BINDIR)/$(PLATFORM)-gcc
+GAS := $(BINDIR)/$(PLATFORM)-as
+GAR := $(BINDIR)/$(PLATFORM)-ar
+
+# FIXME
 NASM := /usr/local/bin/nasm
 
 CFLAGS := -g -O2
@@ -21,8 +28,18 @@ all: $(OBJDIR) $(TARGET)
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-clean:
-	rm -rf $(OBJDIR) $(TARGET)
+clean::
+ifndef TARGET_IMMORTAL
+ifdef TARGET
+	rm -rf $(TARGET)
+endif
+endif
+ifndef OBJDIR_IMMORTAL
+ifdef OBJDIR
+	rm -rf $(OBJDIR)
+endif
+endif
+	$(foreach dir,$(LIBDIRS),$(MAKE) -C $(dir) clean)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(GCC) -c $(REAL_CFLAGS) $< -o $@

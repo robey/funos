@@ -1,8 +1,8 @@
 ROOT := ../..
 
 SRCDIR := $(ROOT)/src/boot
-OBJDIR := $(ROOT)/build-kernel/boot
-TARGET := $(ROOT)/build-kernel/boot.a
+OBJDIR := $(ROOT)/build/kernel/boot
+TARGET := $(ROOT)/build/kernel/boot.a
 
 SOURCES_ASM :=          \
   apic.asm              \
