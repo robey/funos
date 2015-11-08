@@ -28,6 +28,8 @@ OBJECTS := $(OBJECTS_ASM) $(OBJECTS_C)
 
 LIBS := $(addsuffix .a, $(addprefix $(OBJDIR)/, $(LIBDIRS)))
 
+$(LIBS): $(foreach lib, $(LIBDIRS), $(lib)/*)
+
 all: $(BASIC_TOOLS) $(OBJDIR) $(TARGET)
 
 $(OBJDIR):

@@ -27,6 +27,14 @@ extern vga_init, vga_status_update, vga_display_register_a, vga_display_register
 ; require: NX, LONG
 %define CPUID_REQUIRED_EXT_EDX  0x20100000
 
+;
+; procedures in the bootstrap follow a special calling convention (not the
+; intel one):
+;   - int parameters, in order: eax, edx
+;   - ptr parameters, in order: edi, esi
+;   - clobbered by callee: edi, esi -- everything else must be preserved
+;
+
 section .text
 global _start
 _start:

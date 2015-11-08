@@ -14,7 +14,7 @@ clean::
 distclean::
 	rm -rf tools
 
-$(ROOT)/funos.bin:
+$(ROOT)/funos.bin: src/* src/*/*
 	$(MAKE) -C src
 
 run: all
@@ -27,4 +27,3 @@ dump: all
 	$(OBJDUMP) -t funos.bin -d -M intel
 
 .PHONY: run-serial run
-
