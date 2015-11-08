@@ -1,19 +1,24 @@
 END :=
 
-#PLATFORM := i686-elf
-PLATFORM := x86_64-elf
+PLATFORM := i686-elf
+NASM_PLATFORM := elf32
+# PLATFORM := x86_64-elf
+# NASM_PLATFORM := elf64
 BINDIR := $(abspath $(ROOT)/tools/bin)
 
 TAR := tar
+NASM := $(BINDIR)/nasm
 GCC := $(BINDIR)/$(PLATFORM)-gcc
 GAS := $(BINDIR)/$(PLATFORM)-as
 GAR := $(BINDIR)/$(PLATFORM)-ar
+OBJDUMP := $(BINDIR)/$(PLATFORM)-objdump
 
-# FIXME
-NASM := /usr/local/bin/nasm
+# so we can depend on them, and use these dependencies to build them if necessary:
+BASIC_TOOLS := $(NASM) $(GCC) $(GAR)
 
 CFLAGS := -g -O2
-REAL_CFLAGS := -MMD -std=gnu99 -ffreestanding -Wall -Wextra -fvisibility=hidden $(CFLAGS)
+X64_CFLAGS := -mcmodel=small -mno-red-zone -mno-mmx -mno-sse -mno-sse2
+REAL_CFLAGS := -MMD -std=gnu99 -ffreestanding -Wall -Wextra -fvisibility=hidden $(X64_CFLAGS) $(CFLAGS)
 # -isystem $(STARTC)/include
 LDFLAGS := -ffreestanding -O2 -nostdlib -lgcc
 
@@ -23,7 +28,7 @@ OBJECTS := $(OBJECTS_ASM) $(OBJECTS_C)
 
 LIBS := $(addsuffix .a, $(addprefix $(OBJDIR)/, $(LIBDIRS)))
 
-all: $(OBJDIR) $(TARGET)
+all: $(BASIC_TOOLS) $(OBJDIR) $(TARGET)
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -41,10 +46,20 @@ endif
 endif
 	$(foreach dir,$(LIBDIRS),$(MAKE) -C $(dir) clean)
 
+distclean:: clean
+	rm -rf $(TARGET) $(OBJDIR)
+	$(foreach dir,$(LIBDIRS),$(MAKE) -C $(dir) distclean)
+
+$(BASIC_TOOLS):
+	$(MAKE) -C toolchain
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(GCC) -c $(REAL_CFLAGS) $< -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.asm
+	$(NASM) -f$(NASM_PLATFORM) -o $@ $<
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.asm32
 	$(NASM) -felf32 -o $@ $<
 
 $(OBJDIR)/%.a: $(SRCDIR)/%/*

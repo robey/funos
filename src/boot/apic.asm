@@ -4,7 +4,7 @@
 %define PIC2_DATA       0x00a1
 %define APIC_BASE_MSR   0x1b
 
-extern isr_cpu, isr_irq
+;extern _isr_cpu, _isr_irq
 extern vga_display_register_a, vga_display_register_b
 
 global apic_init
@@ -217,7 +217,7 @@ common_exception:
   pop eax
   push esp
   push eax
-  call isr_cpu
+  call _isr_cpu
   add esp, 8
   popa
   add esp, 4
@@ -231,7 +231,7 @@ common_irq_pic1:
   push eax
   mov al, 0x20
   out 0x20, al
-  call isr_irq
+  call _isr_irq
   add esp, 8
   popa
   add esp, 4
@@ -246,9 +246,16 @@ common_irq_pic2:
   mov al, 0x20
   out 0xa0, al
   out 0x20, al
-  call isr_irq
+  call _isr_irq
   add esp, 8
   popa
   add esp, 4
   sti
   iret
+
+
+; remove me
+_isr_irq:
+  ret
+_isr_cpu:
+  ret

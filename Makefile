@@ -11,20 +11,20 @@ all: $(ROOT)/funos.bin
 clean::
 	$(MAKE) -C src clean
 
-distclean: clean
+distclean::
 	rm -rf tools
 
-$(ROOT)/funos.bin: $(ROOT)/tools/bin/$(PLATFORM)-gcc
+$(ROOT)/funos.bin:
 	$(MAKE) -C src
-
-$(ROOT)/tools/bin/%:
-	$(MAKE) -C toolchain
 
 run: all
 	qemu-system-x86_64 -s -smp cpus=2 -kernel $(ROOT)/funos.bin
 
 run-serial: all
 	qemu-system-i386 -s -kernel $(ROOT)/funos.bin -nographic
+
+dump: all
+	$(OBJDUMP) -t funos.bin -d -M intel
 
 .PHONY: run-serial run
 

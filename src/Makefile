@@ -7,17 +7,17 @@ TARGET := $(ROOT)/funos.bin
 KERNEL := funos.bin
 SOURCES_S :=            \
   boot.s                \
-  idt.s                 \
+  # idt.s                 \
   $(END)
-SOURCES_C :=            \
-  buffer.c              \
-  cpuid.c               \
-  irq.c                 \
-  kernel.c              \
-  pic.c                 \
-  serial.c              \
-  vga.c                 \
-  $(END)
+# SOURCES_C :=            \
+#   buffer.c              \
+#   cpuid.c               \
+#   irq.c                 \
+#   kernel.c              \
+#   pic.c                 \
+#   serial.c              \
+#   vga.c                 \
+#   $(END)
 LIBDIRS :=              \
   boot                  \
   $(END)
@@ -30,4 +30,3 @@ $(TARGET): $(SRCDIR)/linker.ld $(OBJECTS) $(LIBS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.s
 	$(GAS) $< -o $@
-
