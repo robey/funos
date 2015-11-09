@@ -7,12 +7,18 @@
 %define VGA_REGISTER_A      (VGA_BOTTOM_LINE + (62 * 2))
 %define VGA_REGISTER_B      (VGA_BOTTOM_LINE + (71 * 2))
 %define VGA_BLANK           (0x5f20)
+%define VGA_HIGHLIGHT       (0x5e)
 
 global \
-  vga_init, \
-  vga_status_update, \
+  vga_blank_line, \
+  vga_compute, \
   vga_display_register_a, \
-  vga_display_register_b
+  vga_display_register_b, \
+  vga_dump_eax, \
+  vga_highlight, \
+  vga_init, \
+  vga_put_small, \
+  vga_status_update
 
 section .text
 
@@ -24,13 +30,25 @@ vga_init:
 
 vga_blank_status_line:
   push eax
+  mov eax, 24
+  call vga_blank_line
+  pop eax
+  ret
+
+; eax = line #
+vga_blank_line:
+  push eax
   push ecx
-  mov edi, VGA_BOTTOM_LINE
+  push edx
+  mov edx, eax
+  shl edx, 8
+  call vga_compute
+  ; let's start blankin'.
   mov ecx, 80
   mov eax, VGA_BLANK
   cld
-  mov word [edi], ax
   rep stosw
+  pop edx
   pop ecx
   pop eax
   ret
@@ -53,6 +71,61 @@ vga_display:
 .out:
   add edi, 2
   mov [vga_status_cursor], edi
+  pop ecx
+  pop eax
+  ret
+
+; edi = where in vga buffer (in/out)
+; ecx = LSB string of up to 4 bytes to write.
+vga_put_small:
+  push eax
+  push ecx
+.loop:
+  cmp cl, 0
+  je .out
+  mov ax, [edi]
+  mov al, cl
+  stosw
+  shr ecx, 8
+  jnz .loop
+.out:
+  pop ecx
+  pop eax
+  ret
+
+; highlight some chars.
+; edi = where in vga buffer
+; ecx = count
+vga_highlight:
+  push eax
+  push edi
+.loop:
+  mov ax, [edi]
+  mov ah, VGA_HIGHLIGHT
+  stosw
+  dec ecx
+  jnz .loop
+  pop edi
+  pop eax
+  ret
+
+; edx YYXX -> edi
+vga_compute:
+  push eax
+  push ecx
+  mov eax, edx
+  and eax, 0xff00
+  ; mulitply Y by 160 by shift magic (it starts out as Y * 256).
+  shr eax, 1
+  mov ecx, eax
+  shr eax, 2
+  add ecx, eax
+  mov edi, VGA_SCREEN_BUFFER
+  add edi, ecx
+  ; add in X
+  and edx, 0xff
+  shl edx, 1
+  add edi, edx
   pop ecx
   pop eax
   ret
@@ -93,16 +166,19 @@ vga_dump_eax:
   shr eax, 4
   cmp ecx, 0
   jne .loop
+  add edi, 16
   pop edx
   pop ecx
   pop ebx
   pop eax
   ret
 
+; display eax at the "register A" field of the status line.
 vga_display_register_a:
   mov edi, VGA_REGISTER_A
   jmp vga_dump_eax
 
+  ; display eax at the "register B" field of the status line.
 vga_display_register_b:
   mov edi, VGA_REGISTER_B
   jmp vga_dump_eax

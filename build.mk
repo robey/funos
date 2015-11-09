@@ -26,11 +26,11 @@ OBJECTS_C := $(addprefix $(OBJDIR)/, $(SOURCES_C:.c=.o))
 OBJECTS_ASM := $(addprefix $(OBJDIR)/, $(SOURCES_ASM:.asm=.o))
 OBJECTS := $(OBJECTS_ASM) $(OBJECTS_C)
 
-LIBS := $(addsuffix .a, $(addprefix $(OBJDIR)/, $(LIBDIRS)))
-
-$(LIBS): $(foreach lib, $(LIBDIRS), $(lib)/*)
+LIBS := $(abspath $(addsuffix .a, $(addprefix $(OBJDIR)/, $(LIBDIRS))))
 
 all: $(BASIC_TOOLS) $(OBJDIR) $(TARGET)
+
+$(LIBS): $(foreach lib, $(LIBDIRS), $(lib)/*)
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)

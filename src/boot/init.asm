@@ -19,7 +19,9 @@ align 4
 
 dd BOOT_MAGIC, BOOT_FLAGS, BOOT_CHECKSUM
 
-extern apic_init
+extern crash
+extern irq_init
+extern serial_init, serial_write
 extern vga_init, vga_status_update, vga_display_register_a, vga_display_register_b
 
 ; require: TSC, MSR, PAE, APIC, CMOV
@@ -131,28 +133,35 @@ _start:
   call vga_status_update        ; H
 
   ;; enable NMI.
-  sti
   in al, 0x70
   and al, 0x7f
   out 0x70, al
   call vga_status_update        ; I
 
-  call apic_init
+  call irq_init
   call vga_status_update        ; J
 
-  extern kernel_main
- ; call kernel_main
+  call serial_init
+  call vga_status_update        ; K
+
+  sti
+
+  mov eax, 0x40
+  call serial_write
+  mov eax, 0x61
+  call serial_write
+
+.wut
+  nop; nop; nop
+  jmp .wut
+  
+  jmp crash
+
+  hlt
+
 die:
   cli
   hlt
-
-global _idt_init
-_idt_init:
-  ret
-
-global _get_boot_info
-_get_boot_info:
-  ret
 
 
 
@@ -191,6 +200,6 @@ initial_gdt_locator:
   dd initial_gdt
 
 section .bootstrap_stack, nobits
-align 4
-resb 16384
+align 4096
+resb 4096
 stack_top:

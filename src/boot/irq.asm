@@ -5,8 +5,7 @@
 
 extern vga_display_register_a, vga_display_register_b
 
-global irq_init
-global idt
+global irq_init, irq_enable, irq_disable, irq_set_handler
 
 section .text
 
