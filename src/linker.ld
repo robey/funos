@@ -39,6 +39,10 @@ SECTIONS
 		*(.bootstrap_stack)
 	}
 
+  .kernel64 BLOCK(4K) : ALIGN(4K) {
+    *(.kernel64)
+  }
+
 	/* The compiler may produce other sections, by default it will put them in
 	   a segment with the same name. Simply add stuff here as needed. */
 }
