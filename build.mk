@@ -17,8 +17,12 @@ OBJDUMP := $(BINDIR)/$(PLATFORM)-objdump
 BASIC_TOOLS := $(NASM) $(GCC) $(GAR)
 
 CFLAGS := -g -O2
-X64_CFLAGS := -mcmodel=small -mno-red-zone -mno-mmx -mno-sse -mno-sse2
-REAL_CFLAGS := -MMD -std=gnu99 -ffreestanding -Wall -Wextra -fvisibility=hidden $(X64_CFLAGS) $(CFLAGS)
+MY_CFLAGS := -MMD -std=gnu99 -ffreestanding -Wall -Wextra -fvisibility=hidden
+EXTRA_X64_CFLAGS := -mcmodel=small -mno-red-zone -mno-mmx -mno-sse -mno-sse2
+TOTAL_CFLAGS_32 := $(MY_CFLAGS) $(CFLAGS)
+TOTAL_CFLAGS_64 := $(MY_CFLAGS) $(EXTRA_X64_CFLAGS) $(CFLAGS)
+TOTAL_CFLAGS := TOTAL_CFLAGS_64
+
 # -isystem $(STARTC)/include
 LDFLAGS := -ffreestanding -O2 -nostdlib -lgcc
 
@@ -56,7 +60,7 @@ $(BASIC_TOOLS):
 	$(MAKE) -C toolchain
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
-	$(GCC) -c $(REAL_CFLAGS) $< -o $@
+	$(GCC) -c $(TOTAL_CFLAGS) $< -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.asm
 	$(NASM) -f$(NASM_PLATFORM) -o $@ $<

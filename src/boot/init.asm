@@ -21,6 +21,7 @@ dd BOOT_MAGIC, BOOT_FLAGS, BOOT_CHECKSUM
 
 extern crash
 extern irq_init
+extern keyboard_init
 extern serial_init, serial_write
 extern vga_init, vga_status_update, vga_display_register_a, vga_display_register_b
 
@@ -144,6 +145,12 @@ _start:
   call serial_init
   call vga_status_update        ; K
 
+  call keyboard_init
+  call vga_status_update        ; L
+
+  mov eax, [0x103000]
+  call vga_display_register_a
+
   sti
 
   mov eax, 0x40
@@ -152,9 +159,8 @@ _start:
   call serial_write
 
 .wut
-  nop; nop; nop
   jmp .wut
-  
+
   jmp crash
 
   hlt
@@ -203,3 +209,7 @@ section .bootstrap_stack, nobits
 align 4096
 resb 4096
 stack_top:
+
+
+section .kernel64
+incbin "../blob.dat"
