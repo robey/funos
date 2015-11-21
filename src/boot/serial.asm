@@ -64,7 +64,7 @@ serial_init:
   ; in theory, there could be high bits set, but anything 1200bps or better
   ; won't use them.
   outio SERIAL1_PORT + PORT_DIVISOR_HIGH, 0
-  outio SERIAL1_PORT + PORT_DIVISOR_LOW, SPEED_9600
+  outio SERIAL1_PORT + PORT_DIVISOR_LOW, SPEED_38400
   outio SERIAL1_PORT + PORT_LINE_CONTROL, MODE_8N1
 
   ; turn on interrupt for receive
