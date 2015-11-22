@@ -71,6 +71,12 @@ crash:
   cmp ecx, 9
   jl .loop
 
+  ; display crash reason, if one was set.
+  mov edx, (12 << 8) + 75
+  call vga_compute
+  mov ecx, [crash_reason]
+  call vga_put_small
+
   ; die.
   cli
   hlt
@@ -123,3 +129,6 @@ reg_stack_top:
 section .data
 
 saved_esp: dd 0
+
+global crash_reason
+crash_reason: dd 0

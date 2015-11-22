@@ -6,8 +6,15 @@
   %endif
 %endmacro
 
-export crash, crash
+export crash, \
+  crash, \
+  crash_reason
 export init, _start
+export irq, \
+  irq_disable, \
+  irq_enable, \
+  irq_init, \
+  irq_set_handler
 export keyboard, keyboard_init
 export serial, serial_init, serial_write
 export vga, \
@@ -23,3 +30,6 @@ export vga, \
   vga_scrollback_size, \
   vga_set_cursor, \
   vga_status_update
+
+; temporary:
+export vgaterm, vgaterm_init

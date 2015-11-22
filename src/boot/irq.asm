@@ -1,23 +1,18 @@
+%define module irq
+%include "api.macro"
+
 %define PIC1_CMD        0x0020
 %define PIC1_DATA       0x0021
 %define PIC2_CMD        0x00a0
 %define PIC2_DATA       0x00a1
 
-extern vga_display_register_a, vga_display_register_b
-
-global irq_init, irq_enable, irq_disable, irq_set_handler
-
 section .text
 
+global irq_init
 irq_init:
   call pic_init
   lidt [idtr]
 	ret
-
-  call vga_display_register_b
-  mov eax, edx
-  call vga_display_register_a
-  ret
 
 ; initialize the PIC, then disable all interrupts (to start).
 pic_init:
@@ -51,6 +46,7 @@ pic_init:
 ;   - db (zero)
 ;   - db flags
 ;   - dw offset (high)
+global irq_set_handler
 irq_set_handler:
   push edi
   mov [idt + (eax * 8)], di
@@ -62,6 +58,7 @@ irq_set_handler:
   ret
 
 ; eax = irq#
+global irq_enable
 irq_enable:
   push ebx
   push ecx
@@ -88,6 +85,7 @@ irq_enable:
   ret
 
 ; eax = irq#
+global irq_disable
 irq_disable:
   push ebx
   push ecx
@@ -109,6 +107,7 @@ irq_disable:
   out dx, al
   pop edx
   pop ecx
+  pop ebx
   ret
 
 

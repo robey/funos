@@ -1,7 +1,10 @@
 ;
 ; bootstrap:
-; this is launched by the (multiboot-compatible) bootloader.
-; sometimes multiboot is called a "stage-2" loader, so i guess we are at
+; this is launched by the (multiboot-compatible) bootloader. it runs in old
+; "short" mode (32 bits), initializes the basic hardware, and then loads the
+; 64-bit kernel and jumps into it in "long" mode (64 bits).
+;
+; sometimes multiboot is called a "stage 2 loader", so i guess we are at
 ; stage 3 now.
 ;
 
@@ -22,15 +25,17 @@ align 4
 
 dd BOOT_MAGIC, BOOT_FLAGS, BOOT_CHECKSUM
 
-extern crash
-extern irq_init
-extern vga_init, vga_status_update, vga_display_register_a, vga_display_register_b
-extern vgaterm_init
-
 ; require: TSC, MSR, PAE, APIC, CMOV
-%define CPUID_REQUIRED_EDX      0x00008270
+%define CPUID_REQUIRED_EDX          0x00008270
 ; require: NX, LONG
-%define CPUID_REQUIRED_EXT_EDX  0x20100000
+%define CPUID_REQUIRED_EXT_EDX      0x20100000
+
+%define EXCEPTION_INVALID_OPCODE    6
+%define EXCEPTION_DOUBLE_FAULT      8
+%define EXCEPTION_SEGMENT_MISSING   11
+%define EXCEPTION_STACK_FAULT       12
+%define EXCEPTION_PROTECTION_FAULT  13
+%define EXCEPTION_PAGE_FAULT        14
 
 ;
 ; procedures in the bootstrap follow a special calling convention (not the
@@ -144,14 +149,32 @@ _start:
   call irq_init
   call vga_status_update        ; J
 
-  call serial_init
+  ; now we should start catching cpu exceptions and showing the crash screen.
+  mov edi, crash_opcode
+  mov eax, EXCEPTION_INVALID_OPCODE
+  call irq_set_handler
+  mov edi, crash_double_fault
+  mov eax, EXCEPTION_DOUBLE_FAULT
+  call irq_set_handler
+  mov edi, crash_segment_missing
+  mov eax, EXCEPTION_SEGMENT_MISSING
+  call irq_set_handler
+  mov edi, crash_stack_fault
+  mov eax, EXCEPTION_STACK_FAULT
+  call irq_set_handler
+  mov edi, crash_protection_fault
+  mov eax, EXCEPTION_PROTECTION_FAULT
+  call irq_set_handler
+  mov edi, crash_page_fault
+  mov eax, EXCEPTION_PAGE_FAULT
+  call irq_set_handler
   call vga_status_update        ; K
 
-  call keyboard_init
+  call serial_init
   call vga_status_update        ; L
 
-  mov eax, [0x103000]
-  call vga_display_register_a
+  call keyboard_init
+  call vga_status_update        ; M
 
   sti
 
@@ -173,7 +196,29 @@ die:
   cli
   hlt
 
+crash_opcode:
+  mov dword [crash_reason], 'UD'
+  jmp crash
 
+crash_double_fault:
+  mov dword [crash_reason], 'DF'
+  jmp crash
+
+crash_segment_missing:
+  mov dword [crash_reason], 'NP'
+  jmp crash
+
+crash_stack_fault:
+  mov dword [crash_reason], 'SS'
+  jmp crash
+
+crash_protection_fault:
+  mov dword [crash_reason], 'GP'
+  jmp crash
+
+crash_page_fault:
+  mov dword [crash_reason], 'PF'
+  jmp crash
 
 
 ; ----- data
