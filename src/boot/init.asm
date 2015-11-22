@@ -5,6 +5,9 @@
 ; stage 3 now.
 ;
 
+%define module init
+%include "api.macro"
+
 %define BOOT_MAGIC          0x1badb002
 %define BOOT_INFO_MAGIC     0x2badb002
 
@@ -21,9 +24,8 @@ dd BOOT_MAGIC, BOOT_FLAGS, BOOT_CHECKSUM
 
 extern crash
 extern irq_init
-extern keyboard_init
-extern serial_init, serial_write
 extern vga_init, vga_status_update, vga_display_register_a, vga_display_register_b
+extern vgaterm_init
 
 ; require: TSC, MSR, PAE, APIC, CMOV
 %define CPUID_REQUIRED_EDX      0x00008270
@@ -158,7 +160,9 @@ _start:
   mov eax, 0x61
   call serial_write
 
-.wut
+  call vgaterm_init
+
+.wut:
   jmp .wut
 
   jmp crash

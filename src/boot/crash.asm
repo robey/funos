@@ -2,11 +2,10 @@
 ; display a pretty hex dump of registers & stack for debugging.
 ;
 
+%define module crash
+%include "api.macro"
+
 section .text
-
-global crash
-
-extern vga_blank_line, vga_compute, vga_dump_eax, vga_highlight, vga_put_small
 
 ; name, y, x, offset
 %macro dumpreg 4
@@ -18,6 +17,7 @@ extern vga_blank_line, vga_compute, vga_dump_eax, vga_highlight, vga_put_small
 %endmacro
 
 ; never returns.
+global crash
 crash:
   mov [saved_esp], esp
   mov esp, reg_stack_top
@@ -113,11 +113,13 @@ dump_memory_row:
   ret
 
 
-section .data
+section .bss
 
 align 4
 reg_stack:
   resb 16 * 4
 reg_stack_top:
+
+section .data
 
 saved_esp: dd 0

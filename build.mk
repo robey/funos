@@ -21,7 +21,7 @@ MY_CFLAGS := -MMD -std=gnu99 -ffreestanding -Wall -Wextra -fvisibility=hidden
 EXTRA_X64_CFLAGS := -mcmodel=small -mno-red-zone -mno-mmx -mno-sse -mno-sse2
 TOTAL_CFLAGS_32 := $(MY_CFLAGS) $(CFLAGS)
 TOTAL_CFLAGS_64 := $(MY_CFLAGS) $(EXTRA_X64_CFLAGS) $(CFLAGS)
-TOTAL_CFLAGS := TOTAL_CFLAGS_64
+TOTAL_CFLAGS := $(TOTAL_CFLAGS_64)
 
 # -isystem $(STARTC)/include
 LDFLAGS := -ffreestanding -O2 -nostdlib -lgcc

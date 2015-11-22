@@ -20,7 +20,7 @@ SOURCES_C :=            \
 include $(ROOT)/build.mk
 
 # boot-loader is in 32-bit mode.
-override TOTAL_CFLAGS := $(TOTAL_CFLAGS_64)
+override TOTAL_CFLAGS := $(TOTAL_CFLAGS_32)
 
 $(TARGET): $(OBJECTS)
 	$(GAR) rvs $@ $^

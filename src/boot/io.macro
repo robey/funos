@@ -1,0 +1,14 @@
+%macro outio 2
+  mov al, %2
+  outioa %1
+%endmacro
+
+%macro outioa 1
+  mov dx, %1
+  out dx, al
+%endmacro
+
+%macro inio 1
+  mov dx, %1
+  in al, dx
+%endmacro

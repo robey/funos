@@ -1,0 +1,25 @@
+
+%macro export 2+
+  %ifidn module, %1
+  %else
+  extern %2
+  %endif
+%endmacro
+
+export crash, crash
+export init, _start
+export keyboard, keyboard_init
+export serial, serial_init, serial_write
+export vga, \
+  vga_blank_line, \
+  vga_compute, \
+  vga_display_register_a, \
+  vga_display_register_b, \
+  vga_dump_eax, \
+  vga_highlight, \
+  vga_init, \
+  vga_put_small, \
+  vga_scrollback_buffer, \
+  vga_scrollback_size, \
+  vga_set_cursor, \
+  vga_status_update

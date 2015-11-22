@@ -1,13 +1,22 @@
 ;
-; simple routines for drawing a status line
+; simple routines for drawing a status line during early boot.
 ;
 
-%define VGA_SCREEN_BUFFER   0xb8000
-%define VGA_BOTTOM_LINE     (VGA_SCREEN_BUFFER + (2 * 80 * 24))
-%define VGA_REGISTER_A      (VGA_BOTTOM_LINE + (62 * 2))
-%define VGA_REGISTER_B      (VGA_BOTTOM_LINE + (71 * 2))
-%define VGA_BLANK           (0x5f20)
-%define VGA_HIGHLIGHT       (0x5e)
+%define VGA_SCREEN_BUFFER           0xb8000
+%define VGA_BOTTOM_LINE             (VGA_SCREEN_BUFFER + (2 * 80 * 24))
+%define VGA_REGISTER_A              (VGA_BOTTOM_LINE + (62 * 2))
+%define VGA_REGISTER_B              (VGA_BOTTOM_LINE + (71 * 2))
+%define VGA_BLANK                   (0x5f20)
+%define VGA_HIGHLIGHT               (0x5e)
+
+%define VGA_SCROLLBACK_SIZE         16384
+
+%define VGA_PORT_SELECT             0x3d4
+%define VGA_PORT_DATA               0x3d5
+%define VGA_REGISTER_CURSOR_START   0x0a
+%define VGA_REGISTER_CURSOR_END     0x0b
+%define VGA_REGISTER_CURSOR_HIGH    0x0e
+%define VGA_REGISTER_CURSOR_LOW     0x0f
 
 global \
   vga_blank_line, \
@@ -18,11 +27,20 @@ global \
   vga_highlight, \
   vga_init, \
   vga_put_small, \
+  vga_scrollback_buffer, \
+  vga_scrollback_size, \
+  vga_set_cursor, \
   vga_status_update
 
 section .text
 
 vga_init:
+  ; set big blocky cursor.
+;asm_outb(VGA_PORT_SELECT, VGA_REGISTER_CURSOR_START);
+;asm_outb(VGA_PORT_DATA, 0);
+;asm_outb(VGA_PORT_SELECT, VGA_REGISTER_CURSOR_END);
+;asm_outb(VGA_PORT_DATA, 15);
+
   call vga_blank_status_line
   mov esi, loading_message
   call vga_display
@@ -178,11 +196,34 @@ vga_display_register_a:
   mov edi, VGA_REGISTER_A
   jmp vga_dump_eax
 
-  ; display eax at the "register B" field of the status line.
+; display eax at the "register B" field of the status line.
 vga_display_register_b:
   mov edi, VGA_REGISTER_B
   jmp vga_dump_eax
 
+; (external) put blinking cursor at linear offset from (0, 0)
+vga_set_cursor:
+  push ebp
+  mov ebp, esp
+  push eax
+  push edx
+  mov dx, VGA_PORT_SELECT
+  mov al, VGA_REGISTER_CURSOR_LOW
+  out dx, al
+  mov dx, VGA_PORT_DATA
+  mov eax, [ebp + 8]
+  out dx, al
+  mov dx, VGA_PORT_SELECT
+  mov al, VGA_REGISTER_CURSOR_HIGH
+  out dx, al
+  mov dx, VGA_PORT_DATA
+  mov eax, [ebp + 8]
+  shr eax, 8
+  out dx, al
+  pop edx
+  pop eax
+  pop ebp
+  ret
 
 section .data
 align 4
@@ -194,3 +235,13 @@ vga_status_letter:
 
 loading_message:
   db 'Loading FunOS...', 0
+
+vga_scrollback_size:
+  dd VGA_SCROLLBACK_SIZE
+
+
+; for the (later) terminal phase, allocate a 16KB scrollback buffer
+section .bss
+align 4096
+vga_scrollback_buffer:
+  resb VGA_SCROLLBACK_SIZE

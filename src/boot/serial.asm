@@ -2,6 +2,10 @@
 ; try to use the serial port (COM1) to communicate.
 ;
 
+%define module serial
+%include "api.macro"
+%include "io.macro"
+
 %define SERIAL1_PORT            0x3f8
 %define SERIAL1_IRQ             4
 %define MODE_8N1                0x03
@@ -34,29 +38,13 @@
 
 %define LINE_STATUS_TX_READY    (1 << 5)
 
-
-global serial_init, serial_write
 extern irq_enable, irq_set_handler
 extern vga_display_register_b
 
 section .text
 
-%macro outio 2
-  mov al, %2
-  outioa %1
-%endmacro
-
-%macro outioa 1
-  mov dx, %1
-  out dx, al
-%endmacro
-
-%macro inio 1
-  mov dx, %1
-  in al, dx
-%endmacro
-
 ; set serial port 1 to 38400, 8N1
+global serial_init
 serial_init:
   push eax
   push edx
@@ -99,6 +87,7 @@ irq_handler:
   iret
 
 ; write al
+global serial_write
 serial_write:
   push edx
   push eax
