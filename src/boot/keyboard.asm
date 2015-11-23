@@ -44,7 +44,7 @@ keyboard_handler:
   or ax, [keyboard_buffer]
   ;
   push eax
-  call vgaterm_keyboard
+  call event_keyboard
   pop eax
   ;
   mov word [keyboard_buffer], 0

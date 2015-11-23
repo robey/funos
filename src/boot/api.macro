@@ -31,5 +31,7 @@ export vga, \
   vga_set_cursor, \
   vga_status_update
 
-; temporary:
-export vgaterm, vgaterm_init, vgaterm_keyboard
+; external hooks:
+extern event_keyboard
+extern event_serial
+extern loader

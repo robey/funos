@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
-
-#define export __attribute__((visibility ("default")))
+#include "loader.h"
+#include "vgaterm.h"
 
 /*
  * simple terminal viewer for the VGA screen that "may" be attached to our
@@ -12,12 +12,6 @@
  *
  * a 16KB buffer gives it about 200 lines of scrollback.
  */
-
-extern char *vga_scrollback_buffer;
-extern uint32_t vga_scrollback_size;
-extern void vga_set_cursor(uint32_t offset);
-extern void vga_show_cursor(void);
-extern void vga_hide_cursor(void);
 
 static uint16_t *screen = (uint16_t *)0xb8000;
 static char *scrollback_cursor;
@@ -120,7 +114,7 @@ static void vgaterm_scrollback(int lines) {
   vgaterm_draw_scrollback();
 }
 
-export void vgaterm_keyboard(uint32_t scancode) {
+void vgaterm_keyboard(uint32_t scancode) {
   if (!ready) return;
   switch (scancode) {
     case KEY_UP:
@@ -138,7 +132,7 @@ export void vgaterm_keyboard(uint32_t scancode) {
   }
 }
 
-export void vgaterm_write(char c) {
+void vgaterm_write(char c) {
   switch (c) {
     case 10:
       vgaterm_lf();
@@ -154,7 +148,7 @@ export void vgaterm_write(char c) {
   }
 }
 
-void vgaterm_init() {
+void vgaterm_init(void) {
   scrollback_cursor = vga_scrollback_buffer;
   scrollback_lines = vga_scrollback_size / COLS;
 
@@ -172,7 +166,4 @@ void vgaterm_init() {
   scrollback_cursor -= COLS;
   vgaterm_lf();
   ready = true;
-
-  char s[] = "Hello!\nMore scrolling!\n\nand more!\n";
-  for (char *p = s; *p; p++) vgaterm_write(*p);
 }

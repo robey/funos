@@ -177,20 +177,7 @@ _start:
   call vga_status_update        ; M
 
   sti
-
-  mov eax, 0x40
-  call serial_write
-  mov eax, 0x61
-  call serial_write
-
-  call vgaterm_init
-
-.wut:
-  jmp .wut
-
-  jmp crash
-
-  hlt
+  call loader
 
 die:
   cli

@@ -38,9 +38,6 @@
 
 %define LINE_STATUS_TX_READY    (1 << 5)
 
-extern irq_enable, irq_set_handler
-extern vga_display_register_b
-
 section .text
 
 ; set serial port 1 to 38400, 8N1
@@ -78,24 +75,29 @@ irq_handler:
   jne .out
   xor eax, eax
   inio SERIAL1_PORT + PORT_RX
-  call vga_display_register_b
-  call serial_write
+  push eax
+  call event_serial
+  pop eax
 .out:
   outio 0x20, 0x20
   pop edx
   pop eax
   iret
 
-; write al
+; (external)
 global serial_write
 serial_write:
+  push ebp
+  mov ebp, esp
   push edx
   push eax
 .loop:
   inio SERIAL1_PORT + PORT_LINE_STATUS
   test al, LINE_STATUS_TX_READY
   jz .loop
-  pop eax
+  mov eax, [ebp + 8]
   outioa SERIAL1_PORT + PORT_TX
+  pop eax
   pop edx
+  pop ebp
   ret
