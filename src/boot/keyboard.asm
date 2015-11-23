@@ -4,27 +4,18 @@
 
 %define module keyboard
 %include "api.macro"
+%include "io.macro"
 
 %define KEYBOARD_IRQ 1
 %define KEYBOARD_DATA_PORT      0x60
 %define KEYBOARD_SET_SCANCODE   0xf0
 
-global keyboard_init
-;extern event_keyboard
-extern irq_enable, irq_set_handler
-
 section .text
 
+global keyboard_init
 keyboard_init:
   push eax
   push edx
-  ; choose scan code set 2
-  ; (does not work.)
-;  mov dx, KEYBOARD_DATA_PORT
-;  mov al, KEYBOARD_SET_SCANCODE
-;  out dx, al
-;  mov al, 2
-;  out dx, al
   mov eax, 0x20 + KEYBOARD_IRQ
   mov edi, keyboard_handler
   call irq_set_handler
@@ -39,8 +30,7 @@ keyboard_handler:
   push ebx
   push edx
   xor eax, eax
-  mov dx, KEYBOARD_DATA_PORT
-  in al, dx
+  inio KEYBOARD_DATA_PORT
   ; e0, f0 are modifier flags so it can represent more than 256 events.
   ; we turn them into bits 8 and 9.
   mov bx, 0x100
@@ -53,8 +43,9 @@ keyboard_handler:
   je .flags
   or ax, [keyboard_buffer]
   ;
-  extern vga_display_register_b
-  call vga_display_register_b
+  push eax
+  call vgaterm_keyboard
+  pop eax
   ;
   mov word [keyboard_buffer], 0
   xor ax, ax

@@ -32,4 +32,4 @@ export vga, \
   vga_status_update
 
 ; temporary:
-export vgaterm, vgaterm_init
+export vgaterm, vgaterm_init, vgaterm_keyboard

@@ -2,6 +2,10 @@
 ; simple routines for drawing a status line during early boot.
 ;
 
+%define module vga
+%include "api.macro"
+%include "io.macro"
+
 %define VGA_SCREEN_BUFFER           0xb8000
 %define VGA_BOTTOM_LINE             (VGA_SCREEN_BUFFER + (2 * 80 * 24))
 %define VGA_REGISTER_A              (VGA_BOTTOM_LINE + (62 * 2))
@@ -19,28 +23,18 @@
 %define VGA_REGISTER_CURSOR_LOW     0x0f
 
 global \
-  vga_blank_line, \
-  vga_compute, \
-  vga_display_register_a, \
-  vga_display_register_b, \
   vga_dump_eax, \
   vga_highlight, \
-  vga_init, \
   vga_put_small, \
   vga_scrollback_buffer, \
   vga_scrollback_size, \
-  vga_set_cursor, \
   vga_status_update
 
 section .text
 
+global vga_init
 vga_init:
-  ; set big blocky cursor.
-;asm_outb(VGA_PORT_SELECT, VGA_REGISTER_CURSOR_START);
-;asm_outb(VGA_PORT_DATA, 0);
-;asm_outb(VGA_PORT_SELECT, VGA_REGISTER_CURSOR_END);
-;asm_outb(VGA_PORT_DATA, 15);
-
+  call vga_show_cursor
   call vga_blank_status_line
   mov esi, loading_message
   call vga_display
@@ -54,6 +48,7 @@ vga_blank_status_line:
   ret
 
 ; eax = line #
+global vga_blank_line
 vga_blank_line:
   push eax
   push ecx
@@ -128,6 +123,7 @@ vga_highlight:
   ret
 
 ; edx YYXX -> edi
+global vga_compute
 vga_compute:
   push eax
   push ecx
@@ -192,37 +188,60 @@ vga_dump_eax:
   ret
 
 ; display eax at the "register A" field of the status line.
+global vga_display_register_a
 vga_display_register_a:
   mov edi, VGA_REGISTER_A
   jmp vga_dump_eax
 
 ; display eax at the "register B" field of the status line.
+global vga_display_register_b
 vga_display_register_b:
   mov edi, VGA_REGISTER_B
   jmp vga_dump_eax
 
 ; (external) put blinking cursor at linear offset from (0, 0)
+global vga_set_cursor
 vga_set_cursor:
   push ebp
   mov ebp, esp
   push eax
   push edx
-  mov dx, VGA_PORT_SELECT
-  mov al, VGA_REGISTER_CURSOR_LOW
-  out dx, al
-  mov dx, VGA_PORT_DATA
+  outio VGA_PORT_SELECT, VGA_REGISTER_CURSOR_LOW
   mov eax, [ebp + 8]
-  out dx, al
-  mov dx, VGA_PORT_SELECT
-  mov al, VGA_REGISTER_CURSOR_HIGH
-  out dx, al
-  mov dx, VGA_PORT_DATA
+  outioa VGA_PORT_DATA
+  outio VGA_PORT_SELECT, VGA_REGISTER_CURSOR_HIGH
   mov eax, [ebp + 8]
   shr eax, 8
-  out dx, al
+  outioa VGA_PORT_DATA
   pop edx
   pop eax
   pop ebp
+  ret
+
+global vga_show_cursor
+vga_show_cursor:
+  push eax
+  push edx
+  ; set big blocky cursor.
+  outio VGA_PORT_SELECT, VGA_REGISTER_CURSOR_START
+  outio VGA_PORT_DATA, 0
+  outio VGA_PORT_SELECT, VGA_REGISTER_CURSOR_END
+  outio VGA_PORT_DATA, 15
+  pop edx
+  pop eax
+  ret
+
+global vga_hide_cursor
+vga_hide_cursor:
+  push eax
+  push edx
+  ; set invisible cursor.
+  outio VGA_PORT_SELECT, VGA_REGISTER_CURSOR_START
+  outio VGA_PORT_DATA, 0x20
+  outio VGA_PORT_SELECT, VGA_REGISTER_CURSOR_END
+  outio VGA_PORT_DATA, 0x20
+  pop edx
+  pop eax
   ret
 
 section .data
