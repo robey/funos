@@ -21,7 +21,7 @@ run: all
 	qemu-system-x86_64 -s -smp cpus=2 -kernel $(ROOT)/funos.bin
 
 run-serial: all
-	qemu-system-i386 -s -kernel $(ROOT)/funos.bin -nographic
+	qemu-system-x86_64 -s -smp cpus=2 -kernel $(ROOT)/funos.bin -nographic
 
 dump: all
 	$(OBJDUMP) -t funos.bin -d -M intel

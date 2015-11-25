@@ -15,6 +15,7 @@ SOURCES_ASM :=          \
 
 SOURCES_C :=            \
   loader.c              \
+  log.c                 \
   vgaterm.c             \
   $(END)
 
