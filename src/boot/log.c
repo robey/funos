@@ -6,27 +6,27 @@
 
 #define LF          10
 #define CR          13
-#define SPACE       32
 
 #define FLAG_HEX                (1 << 0)
 #define FLAG_RIGHT_JUSTIFY      (1 << 1)
+#define FLAG_ZERO_PAD           (1 << 2)
 
 static void write(char c) {
   vgaterm_write(c);
   serial_write(c);
 }
 
-static void pad(int n) {
-  for (; n > 0; n--) write(SPACE);
+static void pad(int n, int flags) {
+  for (; n > 0; n--) write(flags & FLAG_ZERO_PAD ? '0' : ' ');
 }
 
 static void log_string(const char *p, int flags, int width) {
   // first, calculate the length of this string.
   uint16_t len = 0;
   for (const char *x = p; *x; x++, len++);
-  if ((flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len);
+  if ((flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len, flags);
   for (const char *x = p; *x; x++) write(*x);
-  if (!(flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len);
+  if (!(flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len, flags);
 }
 
 static const char *HEX = "0123456789abcdef";
@@ -37,14 +37,14 @@ static void log_hex_byte(uint32_t byte) {
 
 static void log_hex(uint32_t n, int bytes, int flags, int width) {
   uint16_t len = bytes * 2;
-  if ((flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len);
+  if ((flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len, flags);
   if (bytes >= 4) {
     log_hex_byte(n >> 24);
     log_hex_byte(n >> 16);
   }
   if (bytes >= 2) log_hex_byte(n >> 8);
   log_hex_byte(n);
-  if (!(flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len);
+  if (!(flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len, flags);
 }
 
 static void log_sint(int64_t n, int flags, int width) {
@@ -76,10 +76,10 @@ static void log_int(uint32_t n, int bytes, int flags, int width) {
 static void log_int64(uint64_t n, int flags, int width) {
   if (flags & FLAG_HEX) {
     uint16_t len = 16;
-    if ((flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len);
+    if ((flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len, flags);
     log_hex((uint32_t)(n >> 32), 4, 0, 0);
     log_hex((uint32_t)n, 4, 0, 0);
-    if (!(flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len);
+    if (!(flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len, flags);
     return;
   }
 
@@ -95,6 +95,7 @@ static void log_int64(uint64_t n, int flags, int width) {
  *   - s: null-terminated string
  * modifiers:
  *   - x: int should be in hex
+ *   - 0: number should be zero-padded
  *   - <: string should be left-justified (default)
  *   - >: string should be right-justified
  * width (follows ":"):
@@ -106,6 +107,7 @@ static void log_int64(uint64_t n, int flags, int width) {
  */
 void log(const char *text, ...) {
   va_list args;
+  bool linefeed = true;
 
   // internal state for decoding format descriptors:
   char format = ' ';
@@ -143,6 +145,9 @@ void log(const char *text, ...) {
             case '>':
               flags |= FLAG_RIGHT_JUSTIFY;
               break;
+            case '0':
+              flags |= FLAG_ZERO_PAD | FLAG_RIGHT_JUSTIFY;
+              break;
           }
         }
         if (*p == ':') {
@@ -178,6 +183,8 @@ void log(const char *text, ...) {
     }
   }
   va_end(args);
-  write(CR);
-  write(LF);
+  if (!quoted) {
+    write(CR);
+    write(LF);
+  }
 }
