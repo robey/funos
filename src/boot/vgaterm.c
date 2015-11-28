@@ -167,3 +167,11 @@ void vgaterm_init(void) {
   vgaterm_lf();
   ready = true;
 }
+
+void vgaterm_blink() {
+  if ((LOC(1, 24) & 0xff) == ':') {
+    LOC(1, 24) = (LOC(1, 24) & 0xff00) | ' ';
+  } else {
+    LOC(1, 24) = (LOC(1, 24) & 0xff00) | ':';
+  }
+}

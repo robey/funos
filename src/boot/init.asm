@@ -176,12 +176,16 @@ _start:
   call keyboard_init
   call vga_status_update        ; M
 
+  call timer_init
+  call vga_status_update        ; N
+
   sti
   call loader
 
 die:
-  cli
+  ;cli
   hlt
+  ja die
 
 crash_opcode:
   mov dword [crash_reason], 'UD'

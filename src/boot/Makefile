@@ -10,12 +10,14 @@ SOURCES_ASM :=          \
   init.asm              \
   irq.asm               \
   serial.asm            \
+  timer.asm             \
   vga.asm               \
   $(END)
 
 SOURCES_C :=            \
   loader.c              \
   log.c                 \
+	rtc.c                 \
   vgaterm.c             \
   $(END)
 

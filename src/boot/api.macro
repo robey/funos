@@ -16,7 +16,11 @@ export irq, \
   irq_init, \
   irq_set_handler
 export keyboard, keyboard_init
-export serial, serial_init, serial_write
+export serial_write, serial_init, serial_write
+export timer, \
+  timer_init, \
+  timer_sleep, \
+  timer_ticks
 export vga, \
   vga_blank_line, \
   vga_compute, \
@@ -33,5 +37,6 @@ export vga, \
 
 ; external hooks:
 extern event_keyboard
+extern event_second_timer
 extern event_serial
 extern loader
