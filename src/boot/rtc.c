@@ -64,5 +64,6 @@ void rtc_get(rtc_clock *clock) {
 
   // fix up 24-hour clock? :(
   if ((b & 2) == 0) clock->hour += (am_pm ? 12 : 0);
+  if (clock->hour > 23) clock->hour -= 24;
   clock->year += 2000;
 }
