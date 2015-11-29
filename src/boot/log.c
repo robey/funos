@@ -20,12 +20,13 @@ static void pad(int n, int flags) {
   for (; n > 0; n--) write(flags & FLAG_ZERO_PAD ? '0' : ' ');
 }
 
-static void log_string(const char *p, int flags, int width) {
+static void log_string(const char *p, int flags, int width, int max_width) {
   // first, calculate the length of this string.
   uint16_t len = 0;
-  for (const char *x = p; *x; x++, len++);
+  for (const char *x = p; *x && len < max_width; x++, len++);
   if ((flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len, flags);
-  for (const char *x = p; *x; x++) write(*x);
+  uint16_t count = 0;
+  for (const char *x = p; *x && count < len; x++, count++) write(*x);
   if (!(flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len, flags);
 }
 
@@ -47,7 +48,7 @@ static void log_hex(uint32_t n, int bytes, int flags, int width) {
   if (!(flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len, flags);
 }
 
-static void log_sint(int64_t n, int flags, int width) {
+static void log_sint(int64_t n, int flags, int width, int max_width) {
   bool negative = n < 0;
   if (n < 0) n = -n;
 
@@ -61,19 +62,19 @@ static void log_sint(int64_t n, int flags, int width) {
     n /= 10;
   }
   if (negative) *--p = '-';
-  log_string(p, flags, width);
+  log_string(p, flags, width, max_width);
 }
 
-static void log_int(uint32_t n, int bytes, int flags, int width) {
+static void log_int(uint32_t n, int bytes, int flags, int width, int max_width) {
   if (flags & FLAG_HEX) {
     log_hex(n, bytes, flags, width);
     return;
   }
 
-  log_sint((int32_t) n, flags, width);
+  log_sint((int32_t) n, flags, width, max_width);
 }
 
-static void log_int64(uint64_t n, int flags, int width) {
+static void log_int64(uint64_t n, int flags, int width, int max_width) {
   if (flags & FLAG_HEX) {
     uint16_t len = 16;
     if ((flags & FLAG_RIGHT_JUSTIFY) && width > len) pad(width - len, flags);
@@ -83,7 +84,7 @@ static void log_int64(uint64_t n, int flags, int width) {
     return;
   }
 
-  log_sint((int64_t) n, flags, width);
+  log_sint((int64_t) n, flags, width, max_width);
 }
 
 /*
@@ -98,22 +99,21 @@ static void log_int64(uint64_t n, int flags, int width) {
  *   - 0: number should be zero-padded
  *   - <: string should be left-justified (default)
  *   - >: string should be right-justified
- * width (follows ":"):
- *   - positive: right-justify
- *   - negative: left-justify
+ * width (follows ":", optional)
+ * max width (follows ":", optional) -- ignored for hex
  *
  * example:
- *   log("Installing {s:-20} ({d} bytes) ...", packageName, bytes);
+ *   log("Installing {<s:20} ({d} bytes) ...", packageName, bytes);
  */
 void log(const char *text, ...) {
   va_list args;
-  bool linefeed = true;
 
   // internal state for decoding format descriptors:
   char format = ' ';
   bool quoted = false;
   uint16_t flags = 0;
   int16_t width = 0;
+  int16_t max_width = 0;
 
   va_start(args, text);
   for (const char *p = text; *p; p++) {
@@ -151,32 +151,40 @@ void log(const char *text, ...) {
           }
         }
         if (*p == ':') {
-          for (p++; *p && *p != '}'; p++) {
+          for (p++; *p && *p != '}' && *p != ':'; p++) {
             if (*p >= '0' && *p <= '9') width = width * 10 + (*p - '0');
+          }
+          if (*p == ':') {
+            for (p++; *p && *p != '}'; p++) {
+              if (*p >= '0' && *p <= '9') max_width = max_width * 10 + (*p - '0');
+            }
           }
         }
 
+        if (max_width == 0) max_width = 1 << 10;
+
         switch (format) {
           case 's':
-            log_string(va_arg(args, const char *), flags, width);
+            log_string(va_arg(args, const char *), flags, width, max_width);
             break;
           case 'b':
-            log_int(va_arg(args, int), 1, flags, width);
+            log_int(va_arg(args, int), 1, flags, width, max_width);
             break;
           case 'w':
-            log_int(va_arg(args, int), 2, flags, width);
+            log_int(va_arg(args, int), 2, flags, width, max_width);
             break;
           case 'd':
-            log_int(va_arg(args, uint32_t), 4, flags, width);
+            log_int(va_arg(args, uint32_t), 4, flags, width, max_width);
             break;
           case 'q':
-            log_int64(va_arg(args, uint64_t), flags, width);
+            log_int64(va_arg(args, uint64_t), flags, width, max_width);
             break;
         }
 
         format = ' ';
         flags = 0;
         width = 0;
+        max_width = 0;
         break;
       default:
         write(*p);
