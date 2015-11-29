@@ -15,6 +15,7 @@
 ; 00 (timer 0), 11 (set by sending low then high), 010 (rate generator), 0 (binary):
 %define TIMER_RATE_GENERATOR  0x34
 %define TIMER_FREQUENCY       1193
+%define SECOND_IN_MSEC        1000
 
 section .text
 
@@ -44,7 +45,7 @@ timer_handler:
   inc dword [timer_ticks]
   inc dword [timer_msec]
   mov eax, [timer_msec]
-  cmp eax, 500
+  cmp eax, SECOND_IN_MSEC
   jne .out
   mov dword [timer_msec], 0
   call event_second_timer

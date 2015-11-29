@@ -18,7 +18,14 @@ export void loader(void) {
   rtc_get(&clock);
   log("{w}-{b0:2}-{b0:2} {b0:2}:{b0:2}:{b0:2}",
     clock.year, clock.month, clock.day, clock.hour, clock.minute, clock.second);
+  vgaterm_set_clock(&clock);
 
+  uint16_t count = 0;
+  while (true) {
+    count++;
+    timer_sleep(1000);
+    log("What's up, doc? {w}", count);
+  }
 }
 
 export void event_keyboard(uint32_t scancode) {
@@ -31,5 +38,5 @@ export void event_serial(uint32_t data) {
 }
 
 export void event_second_timer(void) {
-  vgaterm_blink();
+  vgaterm_add_second();
 }
