@@ -182,8 +182,8 @@ _start:
   sti
   call loader
 
+; just loop forever, waking up only long enough to handle interrupts.
 die:
-  ;cli
   hlt
   ja die
 
@@ -211,6 +211,10 @@ crash_page_fault:
   mov dword [crash_reason], 'PF'
   jmp crash
 
+global get_boot_info
+get_boot_info:
+  mov eax, [stack_top - 8]
+  ret
 
 ; ----- data
 
